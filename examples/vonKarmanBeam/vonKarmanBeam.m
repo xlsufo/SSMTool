@@ -41,7 +41,8 @@ n = length(M);
 % & \mathbf{0}\\\mathbf{0} & \mathbf{M}\end{array}\right],\mathbf{B}=\left[\begin{array}{cc}\mathbf{C} 
 % & \mathbf{M}\\\mathbf{M} & \mathbf{0}\end{array}\right],\quad\quad\mathbf{F}(\mathbf{z})=\left[\begin{array}{c}\mathbf{-\mathbf{f}(\mathbf{x},\dot{\mathbf{x}})}\\\mathbf{0}\end{array}\right],\quad\mathbf{F}^{ext}(\mathbf{z},\mathbf{\phi})=\left[\begin{array}{c}\mathbf{f}^{ext}(\mathbf{\phi})\\\mathbf{0}\end{array}\right]$.
 
-DS = DynamicalSystem();
+DSorder = 2;
+DS = DynamicalSystem(DSorder);
 set(DS,'M',M,'C',C,'K',K,'fnl',fnl);
 set(DS.Options,'Emax',5,'Nmax',10,'notation','multiindex')
 % set(DS.Options,'Emax',5,'Nmax',10,'notation','tensor')

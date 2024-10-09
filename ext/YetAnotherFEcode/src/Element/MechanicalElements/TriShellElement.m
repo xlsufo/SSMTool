@@ -392,6 +392,7 @@ classdef TriShellElement < Element
             [F_local] = self.f2_local(q_x,q_y);
             % Force in global coordinates            
             F = T_e.' * F_local;
+
         end
         
         function [Df2] = DF2(self,x,y)
@@ -448,7 +449,7 @@ classdef TriShellElement < Element
             q_z = T_e*z_e;
             
             [DF_local] = self.Df3_local(q_x,q_y,q_z);
-            Df3 = T_e.' * DF_local.data;
+            Df3 = T_e.' * DF_local;
         end
         
         function [K] = stiffness_derivative(self,x,v)
@@ -850,6 +851,7 @@ classdef TriShellElement < Element
         end
         
         function F2 = f2_local(self,x,y)
+            %{
             LQ = self.LocalQuantities;            
             % N
             BNLx=[x.' * LQ.Kxx;
@@ -859,6 +861,17 @@ classdef TriShellElement < Element
             % Internal forces
             F2 =  LQ.A * BNLx.' * LQ.Am * LQ.BL * y + ...
                 LQ.A * LQ.BL.' * LQ.Am * (BNLx/2) * y;
+            %}
+            % Symmetric implementation
+            LQ = self.LocalQuantities;
+            % N
+            BNLx=[x.' * LQ.Kxx; x.' * LQ.Kyy; x.' * LQ.Kxy];
+            BNLy=[y.' * LQ.Kxx; y.' * LQ.Kyy; y.' * LQ.Kxy];            
+               
+            F2 = 1/2*( LQ.A * BNLx.' * LQ.Am * LQ.BL * y + ...
+                LQ.A * LQ.BL.' * LQ.Am * (BNLx/2) * y +...
+                LQ.A * BNLy.' * LQ.Am * LQ.BL * x + ...
+                LQ.A * LQ.BL.' * LQ.Am * (BNLy/2) * x); % perhaps simply twice of the first two terms - no! F2 is not symmetric
         end
         
         function DF2 = Df2_local(self,x,y)
@@ -870,7 +883,7 @@ classdef TriShellElement < Element
             DF2 =  LQ.A * BNLx.' * LQ.Am * LQ.BL * y + ...
                 LQ.A * LQ.BL.' * LQ.Am * (BNLx/2) * y +...
                 LQ.A * BNLy.' * LQ.Am * LQ.BL * x + ...
-                LQ.A * LQ.BL.' * LQ.Am * (BNLy/2) * x; % perhaps simply twice of the first two terms
+                LQ.A * LQ.BL.' * LQ.Am * (BNLy/2) * x; % perhaps simply twice of the first two terms - no! F2 is not symmetric
         end
         
         function T2 = T2_local(self)
@@ -888,12 +901,25 @@ classdef TriShellElement < Element
         end
         
         function F3 = f3_local(self,x,y,z)
+            %{
             LQ = self.LocalQuantities;            
             % N
+            
             BNLx=[x.' * LQ.Kxx; x.' * LQ.Kyy; x.' * LQ.Kxy];
             BNLy=[y.' * LQ.Kxx; y.' * LQ.Kyy; y.' * LQ.Kxy];
             
-            F3 =  LQ.A * BNLx.' * LQ.Am * (BNLy/2) * z;            
+            F3 =  LQ.A * BNLx.' * LQ.Am * (BNLy/2) * z;   
+            %}
+            
+            LQ = self.LocalQuantities;
+            % N
+            BNLx=[x.' * LQ.Kxx; x.' * LQ.Kyy; x.' * LQ.Kxy];
+            BNLy=[y.' * LQ.Kxx; y.' * LQ.Kyy; y.' * LQ.Kxy];            
+            BNLz=[z.' * LQ.Kxx; z.' * LQ.Kyy; z.' * LQ.Kxy];
+            
+            F3 = 1/3* (LQ.A * (BNLx.' * LQ.Am * (BNLy/2) * z + ...
+                       BNLz.' * LQ.Am * (BNLx/2) * y + ...
+                        BNLy.' * LQ.Am * (BNLz/2) * x));
         end
         
         function DF3 = Df3_local(self,x,y,z)

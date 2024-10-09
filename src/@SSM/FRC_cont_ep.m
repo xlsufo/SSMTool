@@ -1,4 +1,4 @@
-function varargout = FRC_cont_ep(obj,oid,resModes,order,mFreqs,parName,parRange)
+function varargout = FRC_cont_ep(obj,i,resModes,ORDER,mFreqs,parName,parRange)
 % FRC_CONT_EP This function performs continuation of equilibrium points of
 % slow dynamics. Each equilibirum point corresponds to a periodic orbit in
 % the regular time dynamics. The continuation here starts from the guess of
@@ -6,7 +6,7 @@ function varargout = FRC_cont_ep(obj,oid,resModes,order,mFreqs,parName,parRange)
 %
 % FRC = FRC_CONT_EP(OBJ,OID,RESMODES,ORDER,MFREQS,PARNAME,PARRANGE)
 %
-% oid:      runid of continuation
+% i:        index of subinterval
 % resModes: master subspace
 % order:    expansion order of SSM
 % mFreqs:   internal resonance relation vector
@@ -42,7 +42,20 @@ check_spectrum(lambdaRe,lambdaIm,mFreqs);
 %% SSM computation of autonomous part
 obj.choose_E(resModes)
 % compute autonomous SSM coefficients
-[W_0,R_0] = obj.compute_whisker(order);
+ORDER = sort(ORDER);
+[W_0,R_0] = obj.compute_whisker(ORDER(end));
+
+for jj = 1:numel(ORDER)
+order = ORDER(jj);
+    
+oid  = ['freqSubint',num2str(i),'Order',num2str(order)];
+if jj>1 % take lowest order solution as initial guess
+    old_oid  = ['freqSubint',num2str(i),'Order',num2str(ORDER(1))];
+
+    sol_jminus1 = ep_read_solution('', [old_oid,'.ep'], 1);
+    p0 = sol_jminus1.p;
+    z0 = sol_jminus1.x;
+end
 
 % extract ind and coeff of expansion in reduced dynamics and check
 % consistency. Here beta is coeff and kappa denotes ind
@@ -75,7 +88,7 @@ if ~exist(data_dir, 'dir')
 end
 wdir = fullfile(data_dir,'SSM.mat');
 SSMcoeffs = struct();
-SSMcoeffs.W_0 = W_0;
+SSMcoeffs.W_0 = W_0(1:order);
 SSMcoeffs.W_1 = W_1;
 save(wdir, 'SSMcoeffs');
 fdata.order = order;
@@ -108,6 +121,7 @@ if isempty(z0)
         z0 = zeros(2*m,1);
     end
 end
+
 % construct initial guess equilibrium points
 z0 = get_initial_sol(z0,p0,initialSolver,odefun,nCycle,ispolar);
 
@@ -200,7 +214,7 @@ if obj.FRCOptions.nonAutoParRedCom
         if obj.System.Options.BaseExcitation
             epsf(j) = epsf(j)*(om(j))^2;
         end
-        [Aout, Zout, z_norm, Zic] = compute_full_response_2mD_ReIm(W_0, W1j, statej, epsf(j), nt, mFreqs, outdof);
+        [Aout, Zout, z_norm, Zic] = compute_full_response_2mD_ReIm(W_0(1:order), W1j, statej, epsf(j), nt, mFreqs, outdof);
 
         % collect output in array
         Aout_frc(j,:) = Aout;
@@ -239,7 +253,7 @@ else
             epsf(j) = epsf(j)*(om(j))^2;
         end
         statej = state(j,:);
-        [Aout, Zout, z_norm, Zic] = compute_full_response_2mD_ReIm(W_0, W_1j, statej, epsf(j), nt, mFreqs, outdof);
+        [Aout, Zout, z_norm, Zic] = compute_full_response_2mD_ReIm(W_0(1:order), W_1j, statej, epsf(j), nt, mFreqs, outdof);
 
         % collect output in array
         Aout_frc(j,:) = Aout;
@@ -251,12 +265,18 @@ else
         end
     end
 end
+
+maptime = toc(timeFRCPhysicsDomain);
+fprintf(['Time spent on mapping the FRC to physical coordinates maptime ' num2str(maptime) ' seconds. \n'])
 %%
 % Record output
 FRC.Aout_frc  = Aout_frc;
 FRC.Zout_frc  = Zout_frc;
 FRC.Znorm_frc = Znorm_frc;
+
+if saveIC
 FRC.Z0_frc    = Z0_frc; % initial state
+end
 FRCinfo = struct();
 FRCinfo.timeFRCPhysicsDomain = toc(timeFRCPhysicsDomain);
 FRCinfo.SSMorder   = order;
@@ -264,7 +284,7 @@ FRCinfo.SSMnonAuto = obj.Options.contribNonAuto;
 FRCinfo.SSMispolar = ispolar;
 
 % convert results to cell array
-FRC = array2structArray(FRC);
+FRC = array2structArray(FRC,saveIC);
 
 % Plot Plot FRC in system coordinates
 % if isomega
@@ -273,7 +293,11 @@ FRC = array2structArray(FRC);
 %     plot_FRC_full(FRC,outdof,order,'freq','lines');
 % end
 
-varargout{1} = FRC;
+
+FRCs{jj} = FRC;
+end
+
+varargout{1} = FRCs;
 fdir = fullfile(data_dir,runid,'SSMep.mat');
 save(fdir, 'FRC','FRCinfo');
 end
@@ -413,7 +437,7 @@ else
 end
 end
 
-function FRCy = array2structArray(FRCx)
+function FRCy = array2structArray(FRCx,saveIC)
 
 om    = FRCx.om;
 state = FRCx.z;
@@ -426,9 +450,9 @@ HBidx = FRCx.HBidx;
 Aout  = FRCx.Aout_frc;
 Zout  = FRCx.Zout_frc;
 Znorm = FRCx.Znorm_frc;
+if saveIC
 Zic   = FRCx.Z0_frc;
-
-saveIC = isempty(Zic);
+end
 
 numPts = numel(om);
 FRCy   = cell(numPts,1);

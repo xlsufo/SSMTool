@@ -1,22 +1,25 @@
 function [Coeff_full] = coeffs_conj2full(Coeff_part,row_idx,col_idx, ordering, type)
-%%
-%This function computes the full coefficients with ordering specified
-%in the input array with the same name, given the coefficients in conjugate
-%ordering up to the conjugate center index. It is used in a cellfun of
-%conj2lex as well for the autonomous computation.
-
-%% Input
-% Coeff_part - coefficients in conjugate ordering up to conjugate center
-%              index
-% x_idx      - option to change coordinate directions (for symmetry of
-%              reduced dynamics coefficients
-% y_idx      - conjugate center index at the order of the coefficients
-% ordering   - array that converts conjugate to other ordering
-
-
-%% Ouput
-% Coeff_full - full coefficients in ordering specified by the array
-% ordering
+% COEFFS_CONJ2FULL
+%
+% This function computes the full coefficients with ordering specified
+% in the input array with the same name, given the coefficients in conjugate
+% ordering up to the conjugate center index. It is used in a cellfun of
+% conj2lex as well for the autonomous computation.
+%
+% [Coeff_full] = COEFFS_CONJ2FULL(Coeff_part,row_idx,col_idx, ordering, type)
+%
+% Coeff_part:   coefficients in conjugate ordering up to conjugate center
+%               index
+% x_idx:        option to change coordinate directions (for symmetry of
+%               reduced dynamics coefficients
+% y_idx:        conjugate center index at the order of the coefficients
+% ordering:     array that converts conjugate to other ordering
+% type:         type of coefficient that is reconstructed
+%
+% Coeff_full:   full coefficients in ordering specified by the array
+%               ordering
+%
+% See also: COEFFS_CONJ2LEX, COEFFS_LEX2REVLEX, COEFFS_SETUP
 
 %%
 switch type

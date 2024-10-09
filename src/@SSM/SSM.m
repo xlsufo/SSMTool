@@ -10,7 +10,14 @@ classdef SSM < Manifold
        R_1 = []; % coefficients nonaut reduced dynamics, used in 'continuation po'
        W_1 = []; % nonautonomoues ssm coefficients, used in 'continuation po'
     end
-    
+
+    properties (SetAccess = private)
+        FRCInfo = struct('lvlsetTimeAut',[],'lvlsetTimeNonAut',[])
+        % This data structure stores the solution information:
+        % memory consumption estimate in MB at each order
+        % computational time estimate in seconds at each order
+    end
+
     methods
         %% other methods
            

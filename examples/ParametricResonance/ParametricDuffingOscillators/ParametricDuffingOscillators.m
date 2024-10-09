@@ -41,7 +41,8 @@ epsilon = 0.2;
 % & \mathbf{M}\\\mathbf{M} & \mathbf{0}\end{array}\right],\quad\quad\mathbf{F}(\mathbf{z})=\left[\begin{array}{c}\mathbf{-\mathbf{f}(\mathbf{x},\dot{\mathbf{x}})}\\\mathbf{0}\end{array}\right],\quad\mathbf{G}(\mathbf{z},\mathbf{\phi})=\left[\begin{array}{c}\mathbf{g}(\mathbf{x, 
 % \dot{x}},\phi)\\\mathbf{0}\end{array}\right]$.
 
-DS = DynamicalSystem();
+DSorder = 2;
+DS = DynamicalSystem(DSorder);
 set(DS,'M',M, 'C', C, 'K',K,'fnl',fnl);
 set(DS.Options,'Emax',5,'Nmax',10,'notation','multiindex')
 %% Add forcing

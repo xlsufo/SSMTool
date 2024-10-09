@@ -9,7 +9,8 @@ kappa3 = 0.5;
 
 [M,C,K,fnl,~] = build_model(n,m,c,k,kappa2,kappa3);
 %% Dynamical system setup 
-DS = DynamicalSystem();
+DSorder = 1;
+DS = DynamicalSystem(DSorder);
 % set(DS,'M',M,'C',C,'K',K,'fnl',fnl); % second order works fine
 A = [-K zeros(n);zeros(n) M];
 B = [C M;M zeros(n)];

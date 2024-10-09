@@ -32,7 +32,8 @@ n  = length(M);
 %% Dynamical System Setup
 
 notation = 'multiindex';
-DS = DynamicalSystem();
+DSorder = 2;
+DS = DynamicalSystem(DSorder);
 set(DS,'M',M,'C',C,'K',K,'fnl',fnl);
 set(DS.Options,'Emax',5,'Nmax',10,'notation',notation);
 %% Linear Modal analysis

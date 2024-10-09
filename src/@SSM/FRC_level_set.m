@@ -1,4 +1,4 @@
-function [FRC] = FRC_level_set(obj, resModes, order, parName, parRange)
+function [FRCout] = FRC_level_set(obj, resModes, ORDER, parName, parRange)
 % FRC_LEVEL_SET This function extracts the steady-state amplitude, phase shift and frequency
 %
 % for periodically forced systems from *Forced response curves*. Current implementation
@@ -43,13 +43,21 @@ function [FRC] = FRC_level_set(obj, resModes, order, parName, parRange)
 % FRC:      Forced Response Curve data struct
 %
 % See also: EXTRACT_FRC, FRC_CONTEP, FRC_CONTPO
-
 dimModes = numel(resModes);
 assert(dimModes==2,'levelset method for FRC extraction is valid only for 2-dimensional SSMs. Please use the continuation method')
 
 % compute two dimensional autonomous SSM
 obj.choose_E(resModes)
-[W0, R0] = obj.compute_whisker(order);
+
+
+% highest order
+ORDER = sort(ORDER);
+max_order = ORDER(end);
+num_order = numel(ORDER);
+AutTic = tic;
+
+[W0, R0] = obj.compute_whisker(max_order);
+obj.FRCInfo.lvlsetTimeAut = toc(AutTic);
 
 % autonomous reduced dynamics coefficients
 gamma  = compute_gamma(R0);
@@ -70,10 +78,10 @@ FRC = cell(nPar,1);
 
 switch lower(parName)
     case 'freq' % vary Omega keeping epsilon constant
-        Omega_init   = par(1);        
+        Omega_init   = par(1);
         omegaRange   = par;
         epsilon_init = obj.System.Fext.epsilon;
-
+        
     case 'amp' % vary epsilon keeping Omega constant
         Omega_init   = obj.System.Omega;
         omegaRange   = Omega_init;
@@ -88,70 +96,117 @@ f                    = compute_f(obj,W0,R0,Omega_init);
 %% Obtain FRC
 BaseExcitation = obj.System.Options.BaseExcitation;
 
-% For parallel loop without contribNonAuto
-if ~obj.Options.contribNonAuto
-    if obj.FRCOptions.omDepNonAuto
-        [~, R1_Auto] = obj.compute_perturbed_whisker(order-1,W0,R0,par(1));
-    else    % ignore dependence of coefficients on omega
-        [~, R1_Auto] = obj.compute_perturbed_whisker(order-1,W0,R0,obj.FRCOptions.omDepNonAutoVal);
-    end
+
+% Check if pool has peen created - user needs to explicitly create pool in
+% order to use parallel computation of non-autonomous manifold
+p = gcp('nocreate'); % If no pool, do not create new one.
+if isempty(p) %|| obj.Options.parallelNL
+    poolsize = 0;
 else
-    R1_Auto = [];
-    
-    if obj.FRCOptions.omDepNonAuto % Recompute ROM for every Omega
-        R1_Nonauto = [];
-        W1_Nonauto = [];
-    else % ignore dependence of coefficients on omega
-        [W1_NonAuto, R1_NonAuto] = obj.compute_perturbed_whisker(order-1,W0,R0,obj.FRCOptions.omDepNonAutoVal);        
-    end
+    poolsize = p.NumWorkers;
 end
 
-for j = 1:nPar
-    Omega   = [];  % To avoid 'Uninitialized Temporaries' warning of Parallel Computing Toolbox
-    epsilon = [];
-    
-    % setup parameters
-    switch lower(parName)
-        case 'freq' % vary Omega keeping epsilon constant
-            Omega   = par(j);
-            epsilon = epsilon_init;
-        case 'amp'  % vary epsilon keeping Omega constant
-            epsilon = par(j);
-            Omega   = Omega_init;
-    end
+nonAutTic = tic;
 
-    if BaseExcitation
-        epsilon = epsilon*Omega^2;
-    end
-    
-    if obj.Options.contribNonAuto
-        % compute non-autonomous SSM coefficients
-        if obj.FRCOptions.omDepNonAuto
-            [W1_NonAuto, R1_NonAuto] = obj.compute_perturbed_whisker(order-1,W0,R0,Omega);
+switch obj.Options.contribNonAuto
+    % #####################################################################
+    %        Computing higher order contributions to W1 and R1
+    case true
+        parfor (j = 1:nPar,poolsize)
+            Omega   = [];  % To avoid 'Uninitialized Temporaries' warning
+            epsilon = [];
+            
+            % setup parameters
+            switch lower(parName)
+                case 'freq' % vary Omega keeping epsilon constant
+                    
+                    Omega   = par(j);
+                    epsilon = epsilon_init;
+                case 'amp' % vary epsilon keeping Omega constant
+                    
+                    epsilon = par(j);
+                    Omega   = Omega_init;
+            end          
+            
+            if BaseExcitation
+                epsilon = epsilon*Omega^2;
+            end
+            
+            [W1, R1] = obj.compute_perturbed_whisker(max_order-1,W0,R0,Omega);
+            
+            
+            for order_idx = 1:num_order
+                
+                order = ORDER(order_idx);
+                n_gamma = floor((order-1)/2);
+                
+                [rhodot, rhopsidot, eta] = compute_reduced_dynamics_2D_polar(RHO,PSI, ...
+                    lambda, gamma(1:n_gamma), restrict_order(R1,order,'R'),Omega,epsilon);
+                
+                % Numerical computation of fixed points of the reduced dynamics
+                [rho0, psi0] = compute_fixed_points_2D(rho, psi, rhodot, rhopsidot);
+                
+                % Stabilty calculation
+                stability    = check_stability(rho0,psi0,gamma(1:n_gamma),lambda,epsilon,restrict_order(R1,order,'R'));
+                
+                % output data structure
+                FRC{j,order_idx} = compute_output_polar2D(rho0,psi0,stability,epsilon,...
+                    Omega*ones(size(rho0)),W0(1:order),restrict_order(W1,order,'W'),eta,nt, saveIC, outdof);
+            end
+            
+                    
         end
-        R1 = R1_NonAuto;
-        W1 = W1_NonAuto;
-    else        
-        W1 = [];
-        R1 = R1_Auto;
-    end
-
+    % #####################################################################
+    %        Computing the leading order contribution to R1   
+    case false
+        [~, R1] = obj.compute_perturbed_whisker(0,W0,R0,par(1));
         
-    % reduced dynamics on the grid
-    [rhodot, rhopsidot, eta] = compute_reduced_dynamics_2D_polar(RHO,PSI, ...
-        lambda, gamma, R1,Omega,epsilon);
+        parfor(j = 1:nPar,poolsize)
+            Omega   = [];  % To avoid 'Uninitialized Temporaries' warning
+            epsilon = [];
+            
+            % setup parameters
+            switch lower(parName)
+                case 'freq' % vary Omega keeping epsilon constant                    
+                    Omega   = par(j);
+                    epsilon = epsilon_init;
+                case 'amp' % vary epsilon keeping Omega constant
+                    
+                    epsilon = par(j);
+                    Omega   = Omega_init;
+            end
+            
+            
+            if BaseExcitation
+                epsilon = epsilon*Omega^2;
+            end
+            
+            
+            for order_idx = 1:num_order
+                
+                order = ORDER(order_idx);
+                n_gamma = floor((order-1)/2);
 
-    % Numerical computation of fixed points of the reduced dynamics
-    [rho0, psi0] = compute_fixed_points_2D(rho, psi, rhodot, rhopsidot);
-
-    % Stabilty calculation
-    stability    = check_stability(rho0,psi0,gamma,lambda,epsilon,R1);
-        
-    % output data structure
-    FRC{j} = compute_output_polar2D(rho0,psi0,stability,epsilon,Omega*ones(size(rho0)),W0,W1,eta,nt, saveIC, outdof);
+                [rhodot, rhopsidot, eta] = compute_reduced_dynamics_2D_polar(RHO,PSI, ...
+                    lambda, gamma(1:n_gamma), R1,Omega,epsilon);
+                
+                % Numerical computation of fixed points of the reduced dynamics
+                [rho0, psi0] = compute_fixed_points_2D(rho, psi, rhodot, rhopsidot);
+                
+                % Stabilty calculation
+                stability    = check_stability(rho0,psi0,gamma(1:n_gamma),lambda,epsilon,R1);
+                
+                % output data structure
+                FRC{j,order_idx} = compute_output_polar2D(rho0,psi0,stability,epsilon,...
+                    Omega*ones(size(rho0)),W0(1:order),[],eta,nt, saveIC, outdof);
+            end
+        end        
 end
 
-FRC = cat(1,FRC{:});
+obj.FRCInfo.lvlsetTimeNonAut = toc(nonAutTic);
+for j = 1:numel(ORDER)
+    FRCout{j} = cat(1,FRC{:,j});
+end
 end
 %%
 function [rho, psi, RHO, PSI] = compute_polar_grid(omegaRange,epsilon,gamma,lambda,f,rhoScale, nRho, nPsi)
@@ -164,6 +219,7 @@ rhomaxlin = full(abs(epsilon * f/real(lambda)));
 if isempty(f)
     assert( rhomaxBB ~= 0, 'Estimation of maximal amplitude failed')
     rhomax = rhoScale * rhomaxBB;
+    
 else
     if rhomaxBB ~=0
         % heuristically choose maximum value of polar radius as follows
@@ -179,8 +235,23 @@ psi = (2*pi/nPsi) * (0:nPsi-1);
 end
 
 function [f] = compute_f(obj,W0,R0,Omega)
-    % compute non-autonomous SSM coefficients
-    [~, R1] = obj.compute_perturbed_whisker(0,W0,R0,Omega);
-    f =  nonzeros(R1(1).R(1).coeffs); % leading-order modal forcing coefficient
+% compute non-autonomous SSM coefficients
+[~, R1] = obj.compute_perturbed_whisker(0,W0,R0,Omega);
+f =  nonzeros(R1(1).R(1).coeffs); % leading-order modal forcing coefficient
 end
 
+function [Var] = restrict_order(Var,order,type)
+% restricts paramtersiation or reduced dynamics Var to a certain order
+
+nkappas = numel(Var);
+
+for kap = 1:nkappas
+    
+    if strcmp(type,'W1')
+        Var(kap).W = Var(kap).W(1:order);
+        
+    elseif strcmp(type,'R1')
+        Var(kap).R = Var(kap).R(1:order);
+    end
+end
+end

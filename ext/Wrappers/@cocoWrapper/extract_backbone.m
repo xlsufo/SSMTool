@@ -12,9 +12,9 @@ outdof = obj.outdof;
 
 assert(obj.system.order == 2, 'fnl avaliable only for second-order systems')
 for i=1:numel(obj.system.fnl)
-    fnli = obj.system.fnl{i};
-    if ~isempty(fnli)
-        assert(size(fnli,2)==n, 'current implementation assumes f(x) instead of f(x,xd)');
+    fnli = obj.system.fnl(i);
+    if ~isempty(fnli.coeffs)
+        assert(size(fnli.coeffs,2)==n, 'current implementation assumes f(x) instead of f(x,xd)');
     end
 end
 

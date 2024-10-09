@@ -19,17 +19,17 @@ numoutdof = numel(outdof);
 
 epsfssm = [];
 for i = 1:numel(mus)
-   mui = mus(i) * ones(1,numel(FRCom(i).FRC));
+   mui = mus(i) * ones(1,numel(FRCom(i).FRC{1}));
    %FRCom(i).FRC.Aout = FRCom(i).FRC.Aout(:,1)
    %FRCom(i).FRC.mus = mui;
    epsfssm = [epsfssm,mui];
 end
 FRCom = vertcat(FRCom.FRC);
+FRCom = vertcat(FRCom{:});
 stab  = [FRCom.stability];
 Aout = [FRCom.Aout];
 Aout = Aout(outdof:2:end);
 omssm = [FRCom.Omega];
-
 
 %% Prepare COCOdata
 nSample = 1;

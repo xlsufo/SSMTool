@@ -1,4 +1,7 @@
 function [I] = multi_index_2_ordering(m,ordering,lex2conj)
+% MULTI_INDEX_2_ORDERING This function computes the position of a multi
+%
+% index in an ordered set of all multi-indices of the same order.
 % Given a multi- index array containing multi-indices in its columns this function computes
 % the position of the multi-indices in a ordered set of all multi-index
 % vectors that have the same order as each of the multi-indices. The ordering can be
@@ -6,6 +9,20 @@ function [I] = multi_index_2_ordering(m,ordering,lex2conj)
 % for conjugate ordering, documentation on conjugate ordering in the file
 % $\textit{Explicit Kernel
 % Extraction and Proof ofSymmetries of SSM Coefficients - Multi-Indexversion}$
+% which can be found in the Documentation branch.
+%
+% [I] = MULTI_INDEX_2_ORDERING(m,ordering,lex2conj)
+%
+% m:        multi-inidces
+% ordering: string that determines which order the set has
+% lex2conj: index set to convert from lexicographic to conjugate ordering,
+%           optional parameter, only needed for conjugate ordering.
+%
+% I:        Set containing all the indices of multi-indices in m
+%
+% See also:  MULTI_ADDITION, MULIT_NSUMK, MULTI_SUBTRACTION
+
+
 %%
 if isempty(m)
     I = [];

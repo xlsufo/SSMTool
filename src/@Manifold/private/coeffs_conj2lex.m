@@ -1,7 +1,23 @@
 function [W_0_lex,R_0_lex] = coeffs_conj2lex(multi_input,order,W_0,R_0)
-%%
+% COEFFS_CONJ2LEX
+%
 % This function reconstructs the full SSM-coefficients and reduced dyn.
 % in lexicographical ordering from the conjugate ordering coefficients
+%
+% [W_0_lex,R_0_lex] = COEFFS_CONJ2LEX(multi_input,order,W_0,R_0)
+%
+% multi_input: 
+%           data needed for computation, arrays with index ordering
+% order:    approximation order up until which SSM is computed
+% W0:       autonomous SSM coefficients in conjugate ordering
+% R0:       autonomous RD coefficients in conjugate ordering
+%
+% W_0_lex:  autonomous SSM coefficients in lexicographic ordering
+% R_0_lex:  autonomous RD coefficients in lexicographic ordering
+%
+% See also: COEFFS_CONJ2FULL, COEFFS_LEX2REVLEX, COEFFS_SETUP
+
+
 %%
 l   = multi_input.l; % SSM dimension and partition into real and imaginary subspaces
 l_i = multi_input.l_i;

@@ -36,7 +36,8 @@ Fext(1) = f;
 [mass,damp,stiff,fnl,fext] = build_model(c,Fext,epsilon,n);
 
 % Create 
-DS = DynamicalSystem();
+DSorder = 2;
+DS = DynamicalSystem(DSorder);
 set(DS,'M',mass,'C',damp,'K',stiff,'fnl',fnl);
 set(DS.Options,'Emax',5,'Nmax',10,'notation','multiindex')
 % Forcing
@@ -141,7 +142,7 @@ Fext(2) = f;
 [mass,damp,stiff,fnl,fext] = build_model(c,Fext,epsilon,n);
 
 % Create dynamical system
-DS = DynamicalSystem();
+DS = DynamicalSystem(DSorder);
 set(DS,'M',mass,'C',damp,'K',stiff,'fnl',fnl);
 set(DS.Options,'Emax',5,'Nmax',10,'notation','multiindex')
 % Forcing

@@ -107,8 +107,8 @@ end
 for j = 1:length(fnl)
     fnl{j} = MyAssembly.constrain_tensor(fnl{j});
 end
-
-DS = DynamicalSystem();
+DSorder = 2;
+DS = DynamicalSystem(DSorder);
 set(DS,'M',M,'C',C,'K',K,'fnl',fnl);
 
 %% external force assembly

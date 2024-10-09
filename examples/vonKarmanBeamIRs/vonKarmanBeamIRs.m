@@ -29,7 +29,8 @@ f3_new(outdof,outdof,outdof,outdof) = f3_new(outdof,outdof,outdof,outdof)+kNonli
 fnl_new{2} = f3_new;
 C = (2e-4)/9*Kc;
 
-DS = DynamicalSystem();
+DSorder = 2;
+DS = DynamicalSystem(DSorder);
 set(DS,'M',M,'C',C,'K',Kc,'fnl',fnl_new);
 set(DS.Options,'Emax',5,'Nmax',10,'notation','multiindex');
 %% Primiary resonance with IRs

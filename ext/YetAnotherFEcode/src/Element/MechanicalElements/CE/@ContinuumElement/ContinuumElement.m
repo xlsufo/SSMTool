@@ -151,10 +151,10 @@ classdef ContinuumElement < Element
                 Xi = X(:, ii);  % quadrature points
                 we = W(ii);     % quadrature weights
                 N = self.shape_functions(Xi);
-                NN = kron(N', eye(self.nDim));
+                NN = kron(N.', eye(self.nDim));
                 [~, detJ] = shape_function_derivatives(self, Xi);
                 % integration of K and M through GAUSS QUADRATURE
-                Mel = Mel + (NN'*NN)*(we*detJ);
+                Mel = Mel + (NN.'*NN)*(we*detJ);
             end
             Mel = sparse(Mel)*(rho*self.thickness);
         end
@@ -182,13 +182,39 @@ classdef ContinuumElement < Element
                 S = Sfun(s);    % stress vector (voigt)
                 Bnl = (H + A)*G;
                 % functions to integrate over volume
-                int_K1 = Bnl'*C*Bnl;
-                HSH = dH'*S*dH;
+                int_K1 = Bnl.'*C*Bnl;
+                HSH = dH.'*S*dH;
                 int_Ks = kron(HSH, eye(self.nDim));
                 int_K = (int_K1 + int_Ks)*detJ;
-                int_F = (Bnl'*s)*detJ;
+                int_F = (Bnl.'*s)*detJ;
                 % integration of K and F through Gauss quadrature
                 K = K + we*int_K;
+                F = F + we*int_F;
+            end
+        end
+
+        function [F] = internal_force(self,x)
+            displ = self.extract_element_data(x);
+            X = self.quadrature.X;
+            W = self.quadrature.W;
+            F = self.initialization.F;
+            C = self.initialization.C;
+            H = self.initialization.H;
+            Afun = self.initialization.Afun; % fun: (th) vector -> matrix (A)
+            for ii = 1:length(W)
+                Xi = X(:,ii);   % quadrature points
+                we = W(ii);     % quadrature weights
+                [G,detJ,~] = shape_function_derivatives(self, Xi);
+                th  = G*displ;
+                A = Afun(th);
+                % Green Strain tensor
+                E = (H + 1/2*A)*th;
+                % second Piola-Kirchhoff stress tensor
+                s = C*E;        % stress tensor
+                Bnl = (H + A)*G;
+                % functions to integrate over volume
+                int_F = (Bnl.'*s)*detJ;
+                % integration of K and F through Gauss quadrature
                 F = F + we*int_F;
             end
         end
@@ -257,7 +283,7 @@ classdef ContinuumElement < Element
                 end
                 
                 %construct core part of the tensors for each gauss point
-                GHC = tensor((C*H*G)');
+                GHC = tensor((C*H*G).');
                 TG = tensor(G);  %create tensor object out of matrix
                 LGG = ttt(ttt(L,TG,3,1),TG,2,1);
 
@@ -278,6 +304,7 @@ classdef ContinuumElement < Element
             y_e = self.extract_element_data(y);           
             
             T2e = self.T2();
+            T2e = (T2e + permute(T2e,[1 3 2]))/2;
             f2 = ttv(T2e,{x_e,y_e},[2,3]);
             f2 = f2.data;                
         end
@@ -354,6 +381,7 @@ classdef ContinuumElement < Element
             z_e = self.extract_element_data(z);
             
             T3e = self.T3();
+            T3e = (T3e + permute(T3e,[1 3 4 2]) + permute(T3e,[1 3 2 4]))/3;
             f3 = ttv(T3e,{x_e,y_e,z_e},[2,3,4]);
             f3 = f3.data;                
         end

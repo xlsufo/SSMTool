@@ -47,7 +47,8 @@ for ko=1:norder
         fprintf('calculate error at order %d and rho=%d\n',orderk,rhosamp(krho));
         if dimSSM==2
             % construct sampling points
-            pj  = rhosamp(krho)*exp(1i*theta);
+            p1j = rhosamp(krho)*exp(1i*theta);
+            pj  = [p1j; conj(p1j)];
             % evaluate residuals
             res = obj.compuate_invariance_residual(Wk,Rk,pj,'auto');
         else

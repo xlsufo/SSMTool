@@ -1,7 +1,21 @@
 function [W_0_out,R_0_out] = coeffs_output(W_0,R_0,order)
-%%
-% Storing the coefficients in suitable format for function output.
-% They are stored in lexicographic ordering of the multi-indices
+% COEFFS_OUTPUT This function prepared the autonomous SSM and RD coefficients
+%
+% in appropriate format and ordering as it is used in the toolbox for
+% further analysis in lexicographic ordering of the multi-indices. 
+%
+% [W_0_out,R_0_out] = COEFFS_OUTPUT(W_0,R_0,order)
+%
+% W0:       autonomous SSM coefficients
+% R0:       autonomous RD coefficients
+% order:    approximation order up until which SSM is computed
+%
+% W_0_out:  autonomous SSM coefficients in output format
+% R_0_out:  autonomous RD coefficients in output format
+%
+% See also: COMPUTE_WHISKER
+
+
 %%
 W_0_out = repmat(struct('coeffs',[],'ind',[]),1,order);
 R_0_out = repmat(struct('coeffs',[],'ind',[]),1,order);

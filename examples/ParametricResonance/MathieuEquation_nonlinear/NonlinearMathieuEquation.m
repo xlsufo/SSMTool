@@ -24,8 +24,8 @@ B = eye(2);
 A = [0,1;-(w0^2),-c];
 
 % Dynamical System
-DS = DynamicalSystem();
-set(DS,'order',1)
+DSorder = 1;
+DS = DynamicalSystem(DSorder);
 set(DS,'A',A,'B',B,'F',Fnl);
 set(DS.Options,'Emax',5,'Nmax',10,'notation','multiindex')
 

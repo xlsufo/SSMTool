@@ -1,5 +1,7 @@
-function PBplotSDinSweep(cf,SD_full,varargin)
+function PBplotSDinSweep(cf,SD,varargin)
 
+SD_full.Epsilon = SD.epsilon;
+SD_full.Omega = SD.omega;
 figure(cf)
 
 % Reduced results

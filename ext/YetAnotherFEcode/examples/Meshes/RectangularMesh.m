@@ -30,7 +30,7 @@ if w~=0
     theta0 = asin(H/2/R);    
     for i = 1:size(nodes,1)
         th = asin((nodes(i,2)-H/2)/R);
-        nodes(i,3) = R*cos(th)-cos(theta0);
+        nodes(i,3) = R*cos(th)-R*cos(theta0);
     end
 end
 

@@ -50,29 +50,32 @@ assert(prod([omega0-omegaRange(1),omega0-omegaRange(end)])<0,'The supplied omega
 
 %% loop over orders
 norders = numel(order);
+%% compute autonomous SSM coefficients
+[W0,R0] = obj.compute_whisker(order(end));
+gamma = compute_gamma(R0); BB = cell(norders,1);
 for k=1:norders
-    %% compute autonomous SSM coefficients
-    [W0,R0] = obj.compute_whisker(order(k));
-    gamma = compute_gamma(R0);
-
     %% compute backbone
+    gidx  = round((order(k)+0.5)/2)-1;
     if numel(varargin)==0
-        rho = compute_rho_grid(omegaRange,nOmega,rhoScale,gamma,lambda,nRho);
+        rho = compute_rho_grid(omegaRange,nOmega,rhoScale,gamma(1:gidx),lambda,nRho);
     else
         rhomax = varargin{1};
         rho = linspace(0.001*rhomax,rhomax,nRho);
     end
-    [~,b] = frc_ab(rho, 0, gamma, lambda);
+    [~,b] = frc_ab(rho, 0, gamma(1:gidx), lambda);
     omega = b./rho;
     idx = [find(omega<omegaRange(1)) find(omega>omegaRange(2))];
     rho(idx) = []; omega(idx) = [];
 
     %% Backbone curves in Physical Coordinates
     stability = true(size(rho)); psi = zeros(size(rho)); epsilon = 0;
-    BB = compute_output_polar2D(rho,psi,stability,epsilon,omega,W0,[],1,nt, saveIC, outdof);
-
+    BC = compute_output_polar2D(rho,psi,stability,epsilon,omega,W0(1:order(k)),[],1,nt, saveIC, outdof);
+    BB{k} = BC;
     %% plotting
-    plot_FRC(BB,outdof,order(k),'freq','lines',figs,colors(k,:));
+    plot_FRC(BC,outdof,order(k),'freq','lines',figs,colors(k,:));
+end
+if norders==1
+    BB = BB{1};
 end
 totalComputationTime = toc(startBB);
 disp(['Total time spent on backbone curve computation = ' datestr(datenum(0,0,0,0,0,totalComputationTime),'HH:MM:SS')])

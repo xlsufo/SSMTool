@@ -28,7 +28,8 @@ n = 10;
 % * The BaseExcitation option in DS should be set true to account for the $\Omega$-dependent 
 % forcing amplitude.
 
-DS = DynamicalSystem();
+DSorder = 2;
+DS = DynamicalSystem(DSorder);
 set(DS,'M',mass,'C',damp+gyro,'K',stiff,'fnl',fnl);
 set(DS.Options,'Emax',6,'Nmax',10,'notation','multiindex');
 set(DS.Options,'RayleighDamping',false,'BaseExcitation',true);
@@ -140,7 +141,7 @@ n = 10;
 [mass,damp,gyro,stiff,fnl,fext] = build_model(n,'linear_damp');
 
 % Create model
-DS = DynamicalSystem();
+DS = DynamicalSystem(DSorder);
 set(DS,'M',mass,'C',damp+gyro,'K',stiff,'fnl',fnl);
 set(DS.Options,'Emax',6,'Nmax',10,'notation','multiindex');
 set(DS.Options,'RayleighDamping',false,'BaseExcitation',true);

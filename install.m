@@ -23,7 +23,8 @@ addpath(fullfile(maindir, 'src'));
 
 addpath(fullfile(maindir, 'src','misc'));
 
-addpath(fullfile(maindir, 'src', 'frc'));
+addpath(fullfile(maindir, 'src','frc'));
+
 end
 
 

@@ -19,11 +19,16 @@ phi = linspace(0,2*pi,nt);
 outdof = DS.Options.outDOF;
 
 for j = 1:nOmega
+    j
     if DS.order==2
         x_kappa = zeros(DS.n,DS.nKappa);
         for k = 1:DS.nKappa
             kOmega = DS.fext.data(k).kappa * omegas(j);
-            x_kappa(:,k) = (-kOmega^2 * DS.M + 1i * kOmega * DS.C + DS.K)\DS.fext.data(k).f_n_k(1).coeffs;
+            if k==1
+                x_kappa(:,k) = (-kOmega^2 * DS.M + 1i * kOmega * DS.C + DS.K)\DS.fext.data(k).f_n_k(1).coeffs;
+            else
+                x_kappa(:,k) = conj(x_kappa(:,k-1));
+            end
         end
         response{j} = DS.fext.epsilon * real( x_kappa * exp(1i * DS.kappas * phi));   
     else

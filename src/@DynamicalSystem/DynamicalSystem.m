@@ -24,16 +24,40 @@ classdef DynamicalSystem < matlab.mixin.SetGetExactNames
         A = []
         B = []
         BinvA
-        fnl = []
-        F = []
+        
+        %% Internal Forces
+        %%%%%%%%%%%%%%%%%%%%%%%%%%
+        %   Intrusive Nonlinearity
+        fnl = []            % second order nonlinear internal forces
+        dfnl= []            % jacobian of internal forces
+        F   = []            % first order nonlinear internal forces
+        dF  = []            % jacobian of internal forces
+                
+        %   Semi-intrusive Nonlinearity        
+        fnl_semi    = []    % function handles and parameters to compute nonlinearity, has to take N dim vectors as input
+        dfnl_semi   = []    % Handle for nonlinearity derivative
+                
+        F_semi  = []        % function handles for first order dynamical system
+        dF_semi = []        % function handle for nonlinearity derivative
+        F_semi_sym  = false % by default an asymmetric function handle is assumed        
+        
+        %   Non-intrusive Nonlinearity
+        fnl_non = [];       % second order internal nonlinear force function                     
+        dfnl_non  = [];     % second order internal nonlinear force jacobian function
+        
+        F_non   = [];       % first order internal nonlinear force function
+        dF_non  = [];       % first order internal nonlinear force jacobian function
+        
+        nl_input_dim     = [];     % size of input vector for nonlinearity
+        
+        %% Other properties
         fext = []
         Fext = []
         Omega = []
         
-        
         n                   % dimension for x
         N                   % dimension for z
-        order = 2;          % whether second-order or first-order system
+        order = [];         % whether second-order or first-order system - mandatory property
         degree              % degree of (polynomial) nonlinearity of the rhs of the dynamical system
         nKappa              % Fourier Series expansion order for Fext
         kappas =   []       % matrix with all kappas in its rows
@@ -44,332 +68,188 @@ classdef DynamicalSystem < matlab.mixin.SetGetExactNames
     end
     
     methods
-        %% SET methods
+
+        %% Constructor function
+
+        function obj = DynamicalSystem(order)
+            if nargin < 1
+                error('Please input the order of the Dynamical System');
+            end
+            obj.order = order;
+        end
+
+        %% SET methods - general
+
         function set.A(obj,A)
             obj.A = A;
-            set(obj,'order',1); % since second-order system is assumed by default
         end        
-
-        function set.fnl(obj,fnl)
-            % sets nonlinearity in second order form in multi-index format
-            if iscell(fnl)
-                % Input is sptensor
-                % sets nonlinearity in second order form in multi-index format
-                obj.fnl = set_fnl(fnl);
-            else
-                % Already in multi-index notation
-                obj.fnl = fnl;
-           end
-
-        end
-        %% GET methods
-        function A = get.A(obj)
-            
-            if obj.order ==1
-                A = obj.A;
-            elseif obj.order == 2
-                A = [-obj.K,         sparse(obj.n,obj.n);
-                    sparse(obj.n,obj.n),   obj.M];
-            end
-            
+                  
+        %% GET methods - general
+              
+        function A     = get.A(obj)
+            A     = get_A(obj,obj.A);
         end
         
-        function B = get.B(obj)
-            if obj.order ==1
-                
-                if isempty(obj.B)
-                    B = speye(obj.N,obj.N);
-                else
-                    B = obj.B;
-                end
-                
-            elseif obj.order == 2
-                
-                B = [obj.C,    obj.M;
-                    obj.M,  sparse(obj.n,obj.n)];
-            end
+        function B     = get.B(obj)
+            B     = get_B(obj,obj.B);
         end
         
         function BinvA = get.BinvA(obj)
-            BinvA = [sparse(obj.n,obj.n), speye(obj.n,obj.n)
-                        -obj.M\obj.K,   -obj.M\obj.C];
+            BinvA = get_BinvA(obj,obj.BinvA);
         end
-        
-        function F = get.F(obj)
-            
-            switch obj.Options.notation
-                
-                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                %   Computation in tensor format     %%
-                %   nonlinearitiy is input as tensor %%
-                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                case 'tensor'
                     
-                    if obj.order == 1
-                        
-                        if ~isempty(obj.F)
-                            F = obj.F;
-                        elseif ~isempty(obj.fnl)
-                            % In this case, the DS is input to be first order, but
-                            % the nonlinearity is given in second order format.
-                            % See for instance example BenchmarkSSM1stOrder
-                            
-                            F = fnl_to_Ftens(obj);                           
-                            
-                        else
-                            F = [];
-                        end
-                        
-                    else
-                        
-                        F = fnl_to_Ftens(obj);                           
-
-                    end
-                    
-                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                %   Computation in multiindex format     %%
-                %   nonlinearitiy is input in multiindex %%
-                %   or converted to it from tensor       %%
-                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%                    
-                case 'multiindex'
-                                
-                    if obj.order == 1
-                                                
-                        if ~isempty(obj.F)
-                            F = obj.F;
-                        elseif ~isempty(obj.fnl)                            
-                            % In this case, the DS is input to be first order, but
-                            % the nonlinearity is given in second order format.
-                            % See for instance example BenchmarkSSM1stOrder
-                            
-                            F = fnl_to_Fmulti(obj);
-
-                        else
-                            F = [];
-                        end
-                        
-                    else  % Second order dynamical system was provided
-                        
-                        F = fnl_to_Fmulti(obj);
-                    end
-                    
-                    
-                otherwise
-                    error('The option should be tensor or multiindex.');
-            end
-        end
-            
         function n = get.n(obj)
             n = length(obj.M);
         end
         
-        function N = get.N(obj)
+        function N     = get.N(obj)
             N = length(obj.A);
         end
+
+        
+            
+        %%  Intrusive nonlinearity
+
+        % SET Methods
+        function set.fnl(obj,fnl)
+            obj.fnl = set_fnl(obj,fnl);
+        end
+
+        function set.dfnl(obj,dfnl)
+            obj.dfnl = set_dfnl(obj,dfnl);
+        end
+
+        function set.F(obj,F)
+            obj.F = set_F(obj,F);
+        end
+
+        function set.dF(obj,dF)
+            obj. dF = set_dF(obj,dF);
+        end
+
+        % GET Methods
+        function F = get.F(obj)
+            F = get_F(obj,obj.F);
+        end
+        
+        function dF = get.dF(obj)
+            dF = get_dF(obj,obj.dF);
+        end
+
+        function dfnl = get.dfnl(obj)
+            dfnl = get_dfnl(obj,obj.dfnl);
+        end
+
+        %% Semi-intrusive nonlinearity
+
+        % SET Methods
+        function set.fnl_semi(obj,fnl_semi)
+                obj.fnl_semi = fnl_semi;
+        end
+
+        function set.dfnl_semi(obj,dfnl_semi)
+            obj.dfnl_semi = dfnl_semi;
+        end
+
+        function set.F_semi(obj,F_semi)
+            obj.F_semi = set_F_semi(obj,F_semi);
+        end
+        
+        function set.dF_semi(obj,dF_semi)
+            obj.dF_semi = set_dF_semi(obj,dF_semi);
+        end
+
+        % GET Methods
+        function fnl_semi  = get.fnl_semi(obj)
+            fnl_semi = obj.fnl_semi;
+        end
+        
+        function dfnl_semi = get.dfnl_semi(obj)
+            dfnl_semi = obj.dfnl_semi;
+        end
+        
+        function F_semi    = get.F_semi(obj)
+            F_semi    = get_F_semi(obj,obj.F_semi);
+        end
+        
+        function dF_semi   = get.dF_semi(obj)
+            dF_semi   = get_dF_semi(obj,obj.dF_semi);
+        end
+        
+        %%  Non-intrusive nonlinearity
+
+        % SET Methods
+        function set.fnl_non(obj,fnl_non)
+            obj.fnl_non = fnl_non;
+        end
+        
+        function set.dfnl_non(obj,dfnl_non)
+            obj.dfnl_non = dfnl_non;
+        end
+
+        function set.F_non(obj,F_non)
+            obj.F_non = F_non;
+        end
+        
+        function set.dF_non(obj,dF_non)
+            obj.dF_non = dF_non;
+        end
+
+
+        % GET Methods
+        function fnl_non  = get.fnl_non(obj)
+            fnl_non = obj.fnl_non;
+        end        
+
+        function dfnl_non = get.dfnl_non(obj)
+            dfnl_non = obj.dfnl_non;
+        end     
+        
+        function F_non    = get.F_non(obj)
+            F_non = get_F_non(obj,obj.F_non);
+        end
+
+        function dF_non   = get.dF_non(obj)
+            dF_non = get_dF_non(obj,obj.dF_non);
+        end
+        
+        %% External forcing
         
         function nKappa = get.nKappa(obj)
             nKappa = numel(obj.Fext.data);
         end
         
         function kappas = get.kappas(obj)
-            %kappas stored in rows
-            sz_kappa = size(obj.Fext.data(1).kappa,2);
-            kappas = reshape([obj.Fext.data.kappa],sz_kappa,[]).';
-            
+            kappas = get_kappas(obj);
         end
         
-        function Fext = get.Fext(obj)
-            if obj.order ==1
-                Fext = obj.Fext;
-            elseif obj.order == 2
-                Fext.data    = set_Fext(obj);
-                Fext.epsilon = obj.fext.epsilon;
-            end                           
+        function Fext   = get.Fext(obj)
+            Fext = get_Fext(obj,obj.Fext);                           
         end
-        
-        
+               
         function degree = get.degree(obj)
-            degree = 0;
-            if ~isempty(obj.A)
-                degree = length(obj.F);
-            end
+            degree = get_degree(obj);
         end
         
         %% other methods
         
-        [V, D, W] = linear_spectral_analysis(obj)
-        
-        function add_forcing(obj,f,varargin)
-            if ~isfield(f, 'data') % new format
-                switch obj.order
-                    case 1
-                        nn = size(f,1);
-                        Kappas = varargin{1};
-                        data(1).kappa = Kappas(1);
-                        data(2).kappa = Kappas(2);
-                        data(1).F_n_k(1).coeffs = f(:,1);
-                        data(1).F_n_k(1).ind    = zeros(1,nn);
-                        data(2).F_n_k(1).coeffs = f(:,2);
-                        data(2).F_n_k(1).ind    = zeros(1,nn);
-                        f_ext.data = data;
-                    case 2
-                        nn = size(f,1);
-                        Kappas = varargin{1};
-                        data(1).kappa = Kappas(1);
-                        data(2).kappa = Kappas(2);
-                        data(1).f_n_k(1).coeffs = f(:,1);
-                        data(1).f_n_k(1).ind    = zeros(1,nn);
-                        data(2).f_n_k(1).coeffs = f(:,2);
-                        data(2).f_n_k(1).ind    = zeros(1,nn);
-                        f_ext.data = data;
-                end
-                
-                if numel(varargin)>1
-                    f_ext.epsilon = varargin{2};
-                else
-                    f_ext.epsilon = 1;
-                end
-            else
-                f_ext = f;
-            end
-            
-            switch obj.order
-
-                case 1                    
-                    obj.Fext.data = f_ext.data;                        
-
-                    if isfield(f_ext,'epsilon')
-                        obj.Fext.epsilon = f_ext.epsilon;
-                        
-                    elseif nargin == 3
-                        obj.Fext.epsilon = varargin{1};
-
-                    else
-                        obj.Fext.epsilon = 1;
-
-                    end
-
-                case 2                   
-                    obj.fext.data = f_ext.data;                        
-
-                    if isfield(f_ext,'epsilon')
-                        obj.fext.epsilon = f_ext.epsilon;
-                        
-                    elseif nargin == 3
-                        obj.fext.epsilon = varargin{1};
-
-                    else
-                        obj.fext.epsilon = 1;
-
-                    end
-            end
+        function nl_input_dim = get.nl_input_dim(obj)
+            nl_input_dim = get_nl_input_dim(obj,obj.nl_input_dim);
         end
 
-        
-        fext = compute_fext(obj,t,x,xd)
-        Fext = evaluate_Fext(obj,t,z)
-        fnl = compute_fnl(obj,x,xd)
-        dfnl = compute_dfnldx(obj,x,xd)
-        dfnl = compute_dfnldxd(obj,x,xd)
-        Fnl = evaluate_Fnl(obj,z)
-        f = odefun(obj,t,z)
-        [r, drdqdd,drdqd,drdq, c0] = residual(obj, q, qd, qdd, t)
+
+
+        add_forcing(obj,f,varargin)
+        [V, D, W]                   = linear_spectral_analysis(obj)
+        fext                        = compute_fext(obj,t,x,xd)
+        Fext                        = evaluate_Fext(obj,t,z)
+        fnl                         = compute_fnl(obj,x,xd)
+        dfnl                        = compute_dfnldx(obj,x,xd)
+        dfnl                        = compute_dfnldxd(obj,x,xd)
+        Fnl                         = evaluate_Fnl(obj,z)
+        f                           = odefun(obj,t,z)
+        [r, drdqdd,drdqd,drdq, c0]  = residual(obj, q, qd, qdd, t)
+
+        % For checking input dimension
     end
-end
-
-
-function [F] = fnl_to_Ftens(obj)
-d = length(obj.fnl) + 1;
-F = cell(1,d);
-F{1} = sptensor(obj.A);
-
-for j = 2:d
-    sizej = obj.N*ones(1,j+1);
-    if isempty(obj.fnl(j-1)) || isempty(obj.fnl(j-1).coeffs)
-        F{j} = sptensor(sizej);
-    else
-        [fnl_t] = multi_index_to_tensor(obj.fnl(j-1).coeffs,obj.fnl(j-1).ind);
-        subsj = fnl_t.subs;
-        valsj = -fnl_t.vals;
-        if obj.order==1
-            valsj = -valsj;
-        end
-        F{j} = sptensor(subsj,valsj,sizej);
-    end
-    
-end
-end
-
-function [F] = fnl_to_Fmulti(obj)
-d = length(obj.fnl) + 1;
-F = repmat(struct('coeffs',[],'ind',[]),1,d);
-
-for j = 2:d
-    if isempty(obj.fnl(j-1))
-        F(j) = [];
-        %% following elseif could be removed if inputs are always strictly either first
-        % or second order - not like in bernoulli beam
-    elseif size(obj.fnl(j-1).coeffs,1) == obj.N %fnl already 1st order form
-        
-        F(j).coeffs = obj.fnl(j-1).coeffs;
-        F(j).ind    = obj.fnl(j-1).ind;
-        
-    else % conversion to 1st order form
-        F(j).coeffs = [-obj.fnl(j-1).coeffs;...
-            sparse(obj.n, size(obj.fnl(j-1).coeffs,2)) ];
-        if obj.n == size(obj.fnl(j-1).ind,2) % No nonlinear damping
-            F(j).ind = [obj.fnl(j-1).ind.';...
-                sparse(obj.n, size(obj.fnl(j-1).ind,1)) ].';
-        else %Nonlinear damping
-            F(j).ind = obj.fnl(j-1).ind;
-        end
-        
-    end
-end
-end
-
-function [fnl_multi]  = set_fnl(fnlTensor)
-%Sets second order nonlinear force in multi-index format
-d   = length(fnlTensor) + 1;
-
-fnl_multi = repmat(struct('coeffs',[],'ind',[]),1,d-1);
-
-for j = 2:d
-    if isempty(fnlTensor{j-1}) || nnz(fnlTensor{j-1}) == 0
-
-    else
-        sizej = fnlTensor{j-1}.size;
-        subsj = fnlTensor{j-1}.subs;
-        valsj = fnlTensor{j-1}.vals;
-        tmp = tensor_to_multi_index(sptensor(subsj,valsj,sizej));
-        fnl_multi(j-1).coeffs = tmp.coeffs;
-        fnl_multi(j-1).ind = tmp.ind;
-    end
-end
-end
-
-function [data] = set_Fext(obj)
-% Creates the data struct from the input second order force
-% Structs for storing the coefficients
-F_n_k = repmat(struct('coeffs',[],'ind',[]),numel(obj.fext.data(1).f_n_k),1);
-data  = repmat(struct('kappa',[],'F_n_k',[]),numel(obj.fext.data),1);
-
-% Fill the structs
-for i = 1:numel(obj.fext.data)
-    for j = 1:numel(obj.fext.data(i).f_n_k)
-        F_n_k(j).coeffs = [obj.fext.data(i).f_n_k(j).coeffs;...
-            sparse(obj.n, size(obj.fext.data(i).f_n_k(j).coeffs,2)) ];
-        if size(obj.fext.data(i).f_n_k(j).ind,2) == obj.n
-            F_n_k(j).ind = [obj.fext.data(i).f_n_k(j).ind.';...
-                sparse(obj.n, size(obj.fext.data(i).f_n_k(j).ind,1)) ].';
-        elseif  size(obj.fext.data(i).f_n_k(j).ind,2) == obj.N
-            F_n_k(j).ind =  obj.fext.data(i).f_n_k(j).ind;
-        elseif size(obj.fext.data(i).f_n_k(j).ind,2) > 0;
-            error('Wrong dimensionality of external force ')
-        end
-
-    end
-    data(i).F_n_k = F_n_k;
-    data(i).kappa = obj.fext.data(i).kappa;
-end
 end

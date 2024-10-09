@@ -1,4 +1,4 @@
-function FRC = extract_FRC(obj, parName, parRange, ORDER)
+function FRCs = extract_FRC(obj, parName, parRange, ORDER)
 %  EXTRACT_FRC This function extracts the forced response curve (FRC) for
 %  systems that may have internal resonances. The FRC computation is based
 %  on SSM computation. An appropriate SSM is constructed based on the
@@ -29,7 +29,7 @@ function FRC = extract_FRC(obj, parName, parRange, ORDER)
 %
 % FRC:      FRC data struct
 %
-% See also: FRC_LEVEL_SET, FRC_CONT_EP, FRC_CONT_PO 
+% See also: FRC_LEVEL_SET, FRC_CONT_EP, FRC_CONT_PO
 
 f1 = figure('Name','Norm');
 if isnumeric(obj.FRCOptions.outdof)
@@ -41,78 +41,92 @@ figs = [f1, f2];
 colors = get(0,'defaultaxescolororder');
 totalComputationTime = zeros(size(ORDER));
 
+
+startFRCPreparation = tic;
+if isempty(obj.System.spectrum)
+    [~,~,~] = obj.System.linear_spectral_analysis();
+end
+lambda  = obj.System.spectrum.Lambda;
+assert(~isreal(lambda),'One or more eigenvalues must be underdamped for FRC computation using SSMs')
+
+% detect resonant eigenvalues in the parameter range
+switch lower(parName)
+    case 'freq'
+        if ~isempty(obj.System.fext)
+            assert(~isempty(obj.System.fext.epsilon), 'The epsilon field is empty in the dynamical system external forcing');
+        else
+            assert(~isempty(obj.System.Fext.epsilon), 'The epsilon field is empty in the dynamical system external forcing');
+        end
+        [resLambda,resFreq] = find_eigs_in_freq_range(parRange,lambda,obj.FRCOptions.resType);
+        % obtain subintervals around each resonant eigenvalue
+        [parNodes, nSubint] = subdivide_freq_range(parRange, resFreq);
+    case 'amp'
+        assert(~isempty(obj.System.Omega), 'The Omega field is empty in the dynamical system');
+        % find eigenvalue nearest to forcing frequency
+        [~,idx] = min(abs(lambda - 1i*obj.System.Omega));
+        resLambda = lambda(idx);
+        % setup for loop
+        parNodes = [parRange(1) parRange(end)];
+        nSubint = 1;
+end
+FRCPreparation = toc(startFRCPreparation);
+
+ORDER = sort(ORDER);
+startFRC = tic;
+FRC = cell(nSubint,numel(ORDER));
+
+
+for i=1:nSubint
+    % tune subinterval
+    parSubRange = parNodes(i:i+1)';
+    parSubRange = tune_parameter_range(parSubRange, obj.FRCOptions.frac, i, nSubint);
+    
+    % detect modes resonant with resLambda(i)
+    [resModes,mFreqs] = detect_resonant_modes(resLambda(i),lambda, obj.Options.IRtol);
+    
+    %% FRC computation within the subinterval
+    disp('*****************************************');
+    disp(['Calculating FRC using SSM with master subspace: [' num2str(resModes(:).') ']']);
+
+    switch obj.FRCOptions.method
+        case 'level set'
+            FRCi  = obj.FRC_level_set(resModes,ORDER,parName,parSubRange);
+            for j = 1:numel(ORDER)
+                FRC{i,j} = FRCi{j};
+            end
+            plotStyle = 'circles';
+        case 'continuation ep'
+            % call continuation based method
+            mFreqs = mFreqs(1:2:end)';
+            FRCi   = obj.FRC_cont_ep(i,resModes,ORDER,mFreqs,parName,parSubRange);
+            plotStyle = 'lines';
+            for j = 1:numel(ORDER)
+                FRC{i,j} = FRCi{j};
+            end
+        case 'continuation po'
+            for j = 1:numel(ORDER)
+                runid  = ['freqSubint',num2str(i),'_',num2str(j)];
+                FRCi = obj.FRC_cont_po(runid,resModes,ORDER(j),parSubRange);
+                FRC{i,j}  = cat(2,FRCi{:});
+            end
+            plotStyle = 'circles';
+    end
+end
+
+
+    
 for j = 1:numel(ORDER)
     order = ORDER(j);
-    startFRC = tic;
-    if isempty(obj.System.spectrum)
-        [~,~,~] = obj.System.linear_spectral_analysis();
+    FRCj = cat(1,FRC{:,j}); % merge subintervals
+    FRCs{j} = FRCj;
+    if j == numel(ORDER)
+        idx = [];
+    else
+        idx = ORDER(j)+1:ORDER(end);
     end
-    lambda  = obj.System.spectrum.Lambda;
-    assert(~isreal(lambda),'One or more eigenvalues must be underdamped for FRC computation using SSMs')
-    
-    % detect resonant eigenvalues in the parameter range
-    switch lower(parName)
-        case 'freq'
-            if ~isempty(obj.System.fext)
-                assert(~isempty(obj.System.fext.epsilon), 'The epsilon field is empty in the dynamical system external forcing');
-            else
-                assert(~isempty(obj.System.Fext.epsilon), 'The epsilon field is empty in the dynamical system external forcing');
-            end
-            [resLambda,resFreq] = find_eigs_in_freq_range(parRange,lambda,obj.FRCOptions.resType);
-
-            % obtain subintervals around each resonant eigenvalue
-            [parNodes, nSubint] = subdivide_freq_range(parRange, resFreq);
-        case 'amp'
-            assert(~isempty(obj.System.Omega), 'The Omega field is empty in the dynamical system');
-            % find eigenvalue nearest to forcing frequency
-            [~,idx] = min(abs(lambda - 1i*obj.System.Omega));
-            resLambda = lambda(idx);
-            % setup for loop
-            parNodes = [parRange(1) parRange(end)];
-            nSubint = 1;
-    end
-    
-    FRC = cell(nSubint,1);
-    for i=1:nSubint
-        % tune subinterval
-        parSubRange = parNodes(i:i+1)';
-        parSubRange = tune_parameter_range(parSubRange, obj.FRCOptions.frac, i, nSubint);
-        
-        % detect modes resonant with resLambda(i)
-        [resModes,mFreqs] = detect_resonant_modes(resLambda(i),lambda, obj.Options.IRtol);
-        
-        %% FRC computation within the subinterval
-        disp('*****************************************');
-        disp(['Calculating FRC using SSM with master subspace: [' num2str(resModes(:).') ']']);
-        
-        switch obj.FRCOptions.method
-            case 'level set'
-                FRC{i} = obj.FRC_level_set(resModes,order,parName,parSubRange);
-                plotStyle = 'circles';
-            case 'continuation ep'
-                % call continuation based method
-                mFreqs = mFreqs(1:2:end)';
-                runid  = ['freqSubint',num2str(i)];
-                if j>1 % take lowest order solution as initial guess
-                    sol_jminus1 = ep_read_solution('', [runid,'.ep'], 1);
-                    obj.FRCOptions.p0 = sol_jminus1.p;
-                    obj.FRCOptions.z0 = sol_jminus1.x;
-                end                
-                FRC{i}   = obj.FRC_cont_ep(runid,resModes,order,mFreqs,parName,parSubRange);
-                plotStyle = 'lines';
-            case 'continuation po'
-                runid  = ['freqSubint',num2str(i)];
-                FRCi = obj.FRC_cont_po(runid,resModes,order,parSubRange);
-                FRC{i}  = cat(2,FRCi{:});
-                plotStyle = 'circles';
-        end
-    end
-    % concatenate cell contents as struct arrays
-    FRC = cat(1,FRC{:});
-    totalComputationTime(j) = toc(startFRC);
-    
+    totalComputationTime(j) = toc(startFRC)+ FRCPreparation - sum(obj.solInfo.timeEstimate(idx));
     %% plot FRC in physical coordinates
-    plot_FRC(FRC,obj.FRCOptions.outdof,order,parName,plotStyle, figs, colors(j,:))
+    plot_FRC(FRCj,obj.FRCOptions.outdof,order,parName,plotStyle, figs, colors(j,:))
     
 end
 

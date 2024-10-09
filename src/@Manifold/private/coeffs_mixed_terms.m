@@ -1,19 +1,35 @@
-function [res] = coeffs_mixed_terms(k,m,W,R,field,mix)
-%%
-% This function computes all the mixed terms of the invariance equation at order
-% $k$ for a $l$ dimensional SSM. It is used for nonautonomous computation
-% in revlex ordering and for the autonomous SSM computation in conjugate
-% ordering.
-
+function [res] = coeffs_mixed_terms(k,m,W,R,data,mix)
+% COEFFS_MIXED_TERMS This function computes all the mixed terms of the 
+%
+% invariance equation at order $k$ for a $l$ dimensional SSM. It is used for
+% nonautonomous computation in revlex ordering and for the autonomous SSM 
+% computation in conjugate ordering.
+%
 % In the case where the DS is complex then the autonomous computation also
 % uses the revlex ordering.
+%
+% [res] = COEFFS_MIXED_TERMS(k,m,W,R,field,mix)
+%
+% k:        current order of SSM computation
+% m:        current order of SSM coefficients that are composed
+% W:        autonomous or non-autonomous SSM coefficients
+% R:        autonomous or non-autonomous RD coefficients
+% data:     data struct containing necessary information for computation
+% mix:      'R1' - in this case the product W0R1 is computed
+%           'W1' - in this case the product W1R0 is computed
+%           'aut'- in this case the product W0R0 is computed
+%
+% res:      resulting terms of product at order k
+%
+% See also: COHOMOLOGICAL_SOLUTION, NONAUT_W1R0_PLUS_W0R1
+ 
 %%
 
-N   = field.N;
-l   = field.l;
+N   = data.N;
+l   = data.l;
 
 
-switch field.ordering
+switch data.ordering
     case 'revlex'
         z_k = nchoosek(k+l-1,l-1);
         res = zeros(N,z_k);
@@ -94,9 +110,9 @@ switch field.ordering
         % The mixed terms on the right hand side of the invariance equation are given
         % by all contributions of SSM-coefficients that do not have linear order or order
         % $k$.
-        Z_cci       = field.Z_cci;
-        K           = field.K;
-        revlex2conj = field.revlex2conj;
+        Z_cci       = data.Z_cci;
+        K           = data.K;
+        revlex2conj = data.revlex2conj;
         k           = sum(K(:,1));
         %%
         % If the system is real we need all lower order conjugate center indices which
@@ -105,7 +121,7 @@ switch field.ordering
         string = 'conjugate';
         z_k    = Z_cci(k);
         
-        res = sparse(N,z_k);
+        res = zeros(N,z_k);
         % Anti-lex. ordered multi-indices of order u
         %%
         % For every one of these order $u$ multi-indices, the coefficients $u_j S_{i,\mathbf{u}}R_{j,\mathbf{g}}$
@@ -132,7 +148,7 @@ switch field.ordering
             % + \mathbf{e}_j - \mathbf{u}_{index}$are determined for all $f = 1,...z_k$.
             for index = 1:size(M,2)
                 if  M(j,index) ~= 0
-                    [g,k_idx,~] = multi_subtraction(K+ej,M(:,index),'Parametrised');
+                    [g,k_idx,~] = multi_subtraction(K+ej,M(:,index),'Arbitrary');
                     if ~isempty (g)
                         g_idx        =multi_index_2_ordering(g,string,revlex2conj);
                         

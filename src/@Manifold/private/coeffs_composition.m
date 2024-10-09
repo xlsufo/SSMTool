@@ -1,26 +1,8 @@
-function [Hk] = coeffs_composition(W_0,H,multi_input)
-% Calculates the composition coefficients of power series as given in 
-% https://doi.org/10.1016/j.jsv.2020.115640
-% Appendix C
-switch multi_input.ordering
-    case 'conjugate'
-        %Coefficients in conjugate ordering, used in cohomological solution
-        %for computing autonomous coefficients
-        Hk = conjugate_computation(W_0,H,multi_input);
-    case 'revlex'
-        %Restoring coefficients for nonautonomous calculations given the
-        %calculated SSM coefficients.
-        Hk = rev_lexicographic_computation(W_0,H,multi_input.k);
-    case 'lex'
-        Hk = lexicographic_computation(W_0,H,multi_input.k);
-end
-end
-
-function [Hk] = conjugate_computation(W_0,H,multi_input)
-
-%  COMPOSITIONCOEFFICIENTS This function computes the coefficients for the composition of a multivariate
+function [Hk] = coeffs_composition(W0,H,multi_input)
+% COEFFS_COMPOSITION This function computes the coefficients for the composition of a multivariate
 %
-% polynomial power series.
+% polynomial power series as given in https://doi.org/10.1016/j.jsv.2020.115640 
+% and in the documentation on multi-index SSM computation.
 %
 % Take the expansion of row $i$ of a vector valued function $(\mathbf{S(p)}
 % )_i= \sum_{\mathbf{u}}S_{\mathbf{u},i}\mathbf{p^u}$ .
@@ -32,6 +14,35 @@ function [Hk] = conjugate_computation(W_0,H,multi_input)
 % This function computes $H_{i,s,\mathbf{k}_f} = \frac{s}{k_{f,j}} \sum_{ \mathbf{u
 % < k}_f} u_j S_{i,\mathbf{u}} H_{i,s-1,\mathbf{k}_f-\mathbf{u}} $ for all multi-index
 % vectors $\mathbf{k}_f$ of a given order $k$.
+%
+% [Hk] = COEFFS_COMPOSITION(W_0,H,multi_input)
+%
+% W0:       autonomous SSM coefficients
+% H:        array containing the composition coefficients
+% multi_input:
+%           struct array that stores information necessary for computation
+%
+% Hk:       composition coefficients at order k
+%
+% See also: COHOMOLOGICAL_SOLUTION, FNL_INTRUSIVE
+
+
+switch multi_input.ordering
+    case 'conjugate'
+        %Coefficients in conjugate ordering, used in cohomological solution
+        %for computing autonomous coefficients
+        Hk = conjugate_computation(W0,H,multi_input);
+    case 'revlex'
+        %Restoring coefficients for nonautonomous calculations given the
+        %calculated SSM coefficients.
+        Hk = rev_lexicographic_computation(W0,H,multi_input.k);
+    case 'lex'
+        Hk = lexicographic_computation(W0,H,multi_input.k);
+end
+end
+
+function [Hk] = conjugate_computation(W_0,H,multi_input)
+
 Z_cci = multi_input.Z_cci;
 N = multi_input.N;
 K = multi_input.K;
@@ -53,7 +64,7 @@ for ord = 1:k-1
     
     g       = g(:,revlex2conj{k-ord});
     
-    [gmink,I_k,I_g] = multi_subtraction(K,g,'Parametrised');
+    [gmink,I_k,I_g] = multi_subtraction(K,g,'Arbitrary');
     %%
     % Now all the positions of the order $m$ multi-indices are calculated. Assume
     % the vector $\texttt{gmink}$ has $u_\alpha$ columns.
@@ -161,7 +172,7 @@ for ord = 1:k-1
     else 
         g = k-ord;
     end
-    [gmink,I_k,I_g] = multi_subtraction(K,g,'Parametrised');
+    [gmink,I_k,I_g] = multi_subtraction(K,g,'Arbitrary');
     
     %%
     % Now all the positions of the order $m$ multi-indices are calculated. Assume
@@ -244,7 +255,7 @@ for ord = 1:k-1
     else
         g = k-ord;
     end
-    [gmink,I_k,I_g] = multi_subtraction(K,g,'Parametrised');
+    [gmink,I_k,I_g] = multi_subtraction(K,g,'Arbitrary');
     
     %%
     % Now all the positions of the order $m$ multi-indices are calculated. Assume

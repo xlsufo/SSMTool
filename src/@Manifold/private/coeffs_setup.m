@@ -1,7 +1,7 @@
-function[W_0_1,R_0_1, multi_input] = coeffs_setup(obj,order,DStype)
-%% SSM_MULTI Setup for the mutli-index calculation
-% This function checks if the symmetries described in $\textit{Explicit Kernel
-% Extraction and Proof ofSymmetries of SSM Coefficients - Multi-Indexversion}$
+function[W_0_1,R_0_1, multi_input] = coeffs_setup(obj,order)
+% COEFFS_SETUP This function checks if the symmetries described in 
+%
+% $\textit{Analytic Kernel of Coefficient matrix and Symmetries using multi-index notation}$
 % can be used. This is the  case if the inputs $\texttt{A,B,F}$ are all purely
 % real and the eigenvectors are compl. conjugate for complex conjugate eigenvalues
 %, we say the system is real. If this is not the case, then the full coefficients
@@ -11,6 +11,24 @@ function[W_0_1,R_0_1, multi_input] = coeffs_setup(obj,order,DStype)
 %
 % If the system is real (the symmetries exist) then only the coefficients up
 % to the conjugate center index (in conjugate ordering) are calculated.
+% 
+% [W_0_1,R_0_1,H, multi_input] = COEFFS_SETUP(obj,order)
+%
+% obj:      SSM class object
+% order:    approximation order up until which SSM is computed
+%
+% W_0_1:    leading order autonomous SSM coefficients
+% R_0_1:    leading order autonomous RD coefficients
+% H:        array to store the composition coefficients, not needed for
+%           semi- and non-intrusive computation
+% multi_input:
+%           information needed for SSM computation, index ordering sets
+%           etc.
+%
+% See also: COMPUTE_WHISKER, COHOMOLOGICAL_SOLUTION
+
+%% SSM_MULTI Setup for the mutli-index calculation
+
 
 
 %%
@@ -19,7 +37,7 @@ Lambda_M_vector      = diag(Lambda_M);
 
 V_M = obj.E.basis;          % Left eigenvectors of the modal subspace, order corresponds to rev_lex
 W_M = obj.E.adjointBasis;   % Right eigenvectors of the modal subspace
-switch DStype
+switch obj.System.Options.DStype
     case 'complex'
         %% No symmetries can be exploited, set up in rev_lex ordering
         
@@ -35,7 +53,8 @@ switch DStype
         end
         
         multi_input.Z_cci = z_k; %in this case there is no conjugate center index, the full index set is treated
-     case 'real'
+        multi_input.ordering = 'revlex';
+    case 'real'
         %% Setup for System with Symmetries, set up in conj. ordering
         
         % To make bookkeeping as easy as possible, the eigenvalues and the corresponding
@@ -82,12 +101,23 @@ switch DStype
         W_0_1(1).coeffs = V_M_conj(:,1:multi_input.Z_cci(1));
         R_0_1(1).coeffs = Lambda_M_conj(:,1:multi_input.Z_cci(1));
         H{1}  = W_0_1(1).coeffs;
+        multi_input.ordering = 'conjugate';
+
 end
 
 multi_input.H = H;
 multi_input.W_M = W_M;
 multi_input.Lambda_M_vector = Lambda_M_vector;
-multi_input.nl_order = numel(obj.System.F);
+
+if strcmp(obj.System.Options.Intrusion,'none')
+    multi_input.nl_order = 3;
+elseif strcmp(obj.System.Options.Intrusion,'semi')
+    
+    multi_input.nl_order = numel(obj.System.F_semi);
+else
+    multi_input.nl_order = numel(obj.System.F);
+end
+
 multi_input.l = size(Lambda_M,2);
 
 end

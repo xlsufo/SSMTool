@@ -94,7 +94,7 @@ end
 prob = coco_prob();
 prob = cocoSet(obj, prob);
 prob = coco_set(prob, 'ode', 'autonomous', false);
-prob = coco_set(prob, 'ode', 'vectorized', true);
+prob = coco_set(prob, 'ode', 'vectorized', obj.Options.vectorized);
 odefun = @(t,x,p) obj.ode_het(t,x,p);
 funcs = {odefun};
 

@@ -35,6 +35,7 @@ constr_nodes = readnodeset(mshfile,ebc_ids);
 
 %% Forcing elements
 % F_nodes = readnodeset(mshfile,nbc_ids(1)); % Nodes containing Force / Pressure
+try
 [~,nbc_eid,~]=readelements(mshfile,nbc_ids(1)); % NBC elements
                                     
 % pressure on NBC area
@@ -42,4 +43,8 @@ nbc_el = [];
 for n= nbc_eid   
     i = find(el_id==n-1);% duplicate element for force boundary with index = original index + 1
     nbc_el = [nbc_el; i];    
+end
+
+catch % no forcing nodes specified
+    nbc_el = [];
 end

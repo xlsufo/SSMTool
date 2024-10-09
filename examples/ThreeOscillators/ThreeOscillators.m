@@ -15,7 +15,8 @@ K = 1e-3;
 [mass,damp,stiff,fnl,fext]=build_model(c1,c2,c3,K);
 %% Dynamical System Setup
 
-DS = DynamicalSystem();
+DSorder = 2;
+DS = DynamicalSystem(DSorder);
 set(DS,'M',mass,'C',damp,'K',stiff,'fnl',fnl);
 set(DS.Options,'Emax',5,'Nmax',10,'notation','multiindex')
 

@@ -1,7 +1,20 @@
 function [cell_revlex] = coeffs_lex2revlex(cell_lex,string)
-%%
+% COEFFS_LEX2REVLEX 
+%
 % Converts input coefficients from lexicographic ordering to reverse
-% lexicographic ordering (and also reverse)
+% lexicographic ordering (and also reverse) 
+%
+% [cell_revlex] = COEFFS_LEX2REVLEX(cell_lex,string)
+%
+% cell:     cell containing coefficients in (reverse) lexicographic ordering
+% string:   specifies which type of coefficients are to be converted
+%
+% cell_revlex:
+%           cell with coefficients in opposite order to the input ordering
+%
+% See also: COEFFS_CONJ2FULL, COEFFS_CONJ2LEX, COEFFS_SETUP
+%%
+
 %%
 order = numel(cell_lex);
 

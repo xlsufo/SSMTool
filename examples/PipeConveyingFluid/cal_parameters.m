@@ -12,7 +12,11 @@ dddphis  = [];
 ddddphis = [];
 lamda = zeros(N,1);
 if strcmp(BC,'simply-simply') 
+<<<<<<< HEAD
+    lamda(1:N)=(1:N)*pi;%simply-supported 
+=======
     lamda(1:N)=(1:N)*pi;%simply-supported 这个公�?得到的特�?值是精准解
+>>>>>>> main
 elseif strcmp(BC,'clamped-clamped') 
      lamda(1)=4.730040744862704;lamda(2)=7.853204624095837;
      lamda(3)=10.995607838001671;lamda(4)=14.137165491257464;
@@ -20,8 +24,11 @@ elseif strcmp(BC,'clamped-clamped')
      lamda(7)=23.561944902040455;lamda(8)=26.703537555508188;
      lamda(9)=29.845130209103253;lamda(10)=32.986722862692822;
      lamda(11)=36.128315516282626;lamda(12)=39.269908169872416;
+<<<<<<< HEAD
+=======
 %  lamda(2:N)=(2:N)*pi+0.5*pi;%clamped-clamped
 %  这个公�?得到的特�?值是近似解，精度�?高，直接求特�?方程的解比较好
+>>>>>>> main
 elseif strcmp(BC,'clamped-free') 
     lamda(1)=1.8751040687119611664453082410782141625701117335311;
     lamda(2)=4.6940911329741745764363917780198120493898967375458;
@@ -35,7 +42,10 @@ elseif strcmp(BC,'clamped-free')
     lamda(10)=29.845130209102817263788730907430405063369916050237;
     lamda(11)=32.986722862692838446168314183853683000367036041646;
     lamda(12)=36.128315516282621834281162204648446323089539352502;
+<<<<<<< HEAD
+=======
 % lamda(3:N)=(3:N)*pi-0.5*pi;% 这个公�?得到的特�?值是近似解，精度�?高，直接求特�?方程的解比较好
+>>>>>>> main
 end
 intphi = zeros(N,1);
 for n=1:N
@@ -65,6 +75,54 @@ end
 
 % compute linear coeffficients
 delta=zeros(N);delta1=zeros(N);a=zeros(N);b=zeros(N);
+<<<<<<< HEAD
+
+if strcmp(BC,'simply-simply') 
+    error('Nonlinearity data is not available for simply-supported pipes\n');
+% compute nonlinear coeffficients of cantilevered pipe
+elseif strcmp(BC,'clamped-free') 
+    wdir = fullfile(pwd,'coeff_Matrix',['NN=',num2str(N)],'SSMep.mat');
+    n1=load(fullfile(wdir,'n1.txt'));n2=load(fullfile(wdir,'n2.txt'));
+    n3=load(fullfile(wdir,'n3.txt'));n4=load(fullfile(wdir,'n4.txt'));
+    n5=load(fullfile(wdir,'n5.txt'));n6=load(fullfile(wdir,'n6.txt'));  
+    n7=load(fullfile(wdir,'n7.txt'));n8=load(fullfile(wdir,'n8.txt'));
+    n9=load(fullfile(wdir,'n9.txt'));n10=load(fullfile(wdir,'n10.txt'));
+    n11=load(fullfile(wdir,'n11.txt'));n12=load(fullfile(wdir,'n12.txt'));
+    n13=load(fullfile(wdir,'n13.txt'));n14=load(fullfile(wdir,'n14.txt'));
+    n15=load(fullfile(wdir,'n15.txt'));n16=load(fullfile(wdir,'n16.txt'));  
+    n17=load(fullfile(wdir,'n17.txt'));n18=load(fullfile(wdir,'n18.txt'));
+    n19=load(fullfile(wdir,'n19.txt'));n20=load(fullfile(wdir,'n20.txt'));
+    n21=load(fullfile(wdir,'n21.txt'));n22=load(fullfile(wdir,'n22.txt'));
+    n23=load(fullfile(wdir,'n23.txt'));n24=load(fullfile(wdir,'n24.txt'));
+    n25=load(fullfile(wdir,'n25.txt'));
+    delta=load(fullfile(wdir,'delta.txt'));delta1=load(fullfile(wdir,'delta1.txt'));
+    a=load(fullfile(wdir,'a1.txt'));b=load(fullfile(wdir,'b1.txt'));
+    N1 = zeros(N,N,N,N);N2 = zeros(N,N,N,N);N3 = zeros(N,N,N,N);N4 = zeros(N,N,N,N);N5 = zeros(N,N,N,N);
+    N6 = zeros(N,N,N,N);N7 = zeros(N,N,N,N);N8 = zeros(N,N,N,N);N9 = zeros(N,N,N,N);N10 = zeros(N,N,N,N);
+    N11 = zeros(N,N,N,N);N12 = zeros(N,N,N,N);N13 = zeros(N,N,N,N);N14 = zeros(N,N,N,N);N15 = zeros(N,N,N,N);
+    N16 = zeros(N,N,N,N);N17 = zeros(N,N,N,N);N18 = zeros(N,N,N,N);N19 = zeros(N,N,N,N);N20 = zeros(N,N,N,N);
+    N21 = zeros(N,N,N,N);N22 = zeros(N,N,N,N);N23 = zeros(N,N,N,N);N24 = zeros(N,N,N,N);N25 = zeros(N,N,N,N);
+    for n=1:N
+        for m=1:N
+            s=(n-1)*N+m;
+            dn=N^2;
+            e=s+(N-1)*dn;
+            N1(:,:,n,m)=n1(:,s:dn:e);N2(:,:,n,m)=n2(:,s:dn:e);N3(:,:,n,m)=n3(:,s:dn:e);
+            N4(:,:,n,m)=n4(:,s:dn:e);N5(:,:,n,m)=n5(:,s:dn:e);N6(:,:,n,m)=n6(:,s:dn:e);
+            N7(:,:,n,m)=n7(:,s:dn:e);N8(:,:,n,m)=n8(:,s:dn:e);N9(:,:,n,m)=n9(:,s:dn:e);
+            N10(:,:,n,m)=n10(:,s:dn:e);N11(:,:,n,m)=n11(:,s:dn:e);N12(:,:,n,m)=n12(:,s:dn:e);
+            N13(:,:,n,m)=n13(:,s:dn:e);N14(:,:,n,m)=n14(:,s:dn:e);N15(:,:,n,m)=n15(:,s:dn:e);
+            N16(:,:,n,m)=n16(:,s:dn:e);N17(:,:,n,m)=n17(:,s:dn:e);N18(:,:,n,m)=n18(:,s:dn:e);
+            N19(:,:,n,m)=n19(:,s:dn:e);N20(:,:,n,m)=n20(:,s:dn:e);N21(:,:,n,m)=n21(:,s:dn:e);
+            N22(:,:,n,m)=n22(:,s:dn:e);N23(:,:,n,m)=n23(:,s:dn:e);N24(:,:,n,m)=n24(:,s:dn:e);
+            N25(:,:,n,m)=n25(:,s:dn:e);
+        end
+    end
+    a_ijkl=3*N4+N5+N13-N17-N25;
+    c_ijkl=N2-N9-N15+N22;
+    b_ijkl=N1-N7-N14+N19;
+    g_ijkl=N6-N18;
+=======
 % for i=1:N
 %     for j=1:N
 %         delta(i,j) = int(phis(i)*phis(j),x,0,l);
@@ -156,6 +214,7 @@ a_ijkl=3*N4+N5+N13-N17-N25;
 c_ijkl=N2-N9-N15+N22;
 b_ijkl=N1-N7-N14+N19;
 g_ijkl=N6-N18;
+>>>>>>> main
 end
 end
     

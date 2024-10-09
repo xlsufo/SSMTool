@@ -6,9 +6,9 @@ classdef ManifoldOptions < matlab.mixin.SetGet
         notation  = 'tensor' % 'multiindex'
         paramStyle = 'normalform' % 'graph'
         reltol = 0.5
-        IRtol = 0.05   
-        COMPtype  = 'second'       % whether first order computation is to be applied
-        
+        IRtol = 0.05        
+        COMPtype  = 'first'        % whether first order computation is to be applied
+
         contribNonAuto = true      % true: non-autonomous contributions are computed in manifold parametrization
                                    % false: non-autonomous contibutions not computed in the manifold parametrization 
                                    % and only leading-order reduced

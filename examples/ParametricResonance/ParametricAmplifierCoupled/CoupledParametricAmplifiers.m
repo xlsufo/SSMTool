@@ -38,7 +38,8 @@ psi = pi/4;
 % \dot{x}},\phi)\\\mathbf{0}\end{array}\right]$.
 
 % Dynamical System
-DS = DynamicalSystem();
+DSorder = 2;
+DS = DynamicalSystem(DSorder);
 set(DS,'M',M, 'C', C, 'K',K,'fnl',fnl);
 set(DS.Options,'Emax',5,'Nmax',10,'notation','multiindex')
 

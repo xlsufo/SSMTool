@@ -1,18 +1,20 @@
 classdef DSOptions < matlab.mixin.SetGet
     %DSOptions Options for DynamicalSystems class
     properties
-        notation  = 'tensor' % 'multiindex'
-        DStype      = 'real'   % 'complex'  whether DS features complex quantities (i.e. in A,B or forcing F) or not
-        ChooseComplexComp = false % Choose computation to ignore symmetry on manifold;
-        Nmax = 100; % maximum dimensionality up to which all eigenvalues would be computed for first order systems
-        Emax = 10;   % If all eigenvalues are not computed, then we use only first E_max eigenvalues for checking outer resonance.
-        outDOF = []; % output degree of freedom
-        RayleighDamping  = true; % damping matrix of second-order system
-        HarmonicForce = true; % external forcing
-        lambdaThreshold = 1e16; % Threshold for stiff eigenmodes (will be removed)
-        BaseExcitation = false; % harmonic forcing in the form \epsilon\Omega^2 f^{ext}(\Omega t)
-        sigma  = 0; % used in eigenvalue computation in eigs (compute Emax eigenvalues around sigma, which is zero by default - smallestabs)
-        RemoveZeros = true; % remove zero eigenvalues in linear spectral analysis (false if parameter-dependent SSM/LSM is computed)
+        notation  = 'tensor'        % 'multiindex'
+        ChooseComplexComp = false   % Choose computation to ignore symmetry on manifold;
+        DStype    = 'real'          % 'complex'  whether DS features complex quantities (i.e. in A,B or forcing F) or not
+
+        Nmax = 100;                 % maximum dimensionality up to which all eigenvalues would be computed for first order systems
+        Emax = 10;                  % If all eigenvalues are not computed, then we use only first E_max eigenvalues for checking outer resonance.
+        outDOF = [];                % output degree of freedom
+        RayleighDamping  = true;    % damping matrix of second-order system
+        HarmonicForce = true;       % external forcing
+        lambdaThreshold = 1e16;     % Threshold for stiff eigenmodes (will be removed)          
+        BaseExcitation = false;     % harmonic forcing in the form \epsilon\Omega^2 f^{ext}(\Omega t)
+        sigma  = 0;                 % used in eigenvalue computation in eigs (compute Emax eigenvalues around sigma, which is zero by default - smallestabs)
+        RemoveZeros = true;         % remove zero eigenvalues in linear spectral analysis (false if parameter-dependent SSM/LSM is computed)
+	    Intrusion = 'full'          % 'full', 'semi', 'none' Computation of manifold done in a nonintrusive manner
     end
     methods
         function set.notation(obj,notation)

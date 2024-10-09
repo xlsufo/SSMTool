@@ -35,8 +35,8 @@ clear all; close all; clc
 % \dot{x}},\phi)\\\mathbf{0}\end{array}\right]$$
 
 % Dynamical System
-DS = DynamicalSystem();
-set(DS,'order',2)
+DSorder = 2;
+DS = DynamicalSystem(DSorder);
 set(DS,'M',M,'C',C,'K',K,'fnl',fnl);
 set(DS.Options,'Emax',5,'Nmax',10,'notation','multiindex')
 %% Add forcing

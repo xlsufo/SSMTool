@@ -1,10 +1,8 @@
-# SSMTool 2.5: Computation of invariant manifolds in high-dimensional mechanics problems
+# SSMTool 2.6: Computation of invariant manifolds in high-dimensional mechanics problems
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4614201.svg)](https://doi.org/10.5281/zenodo.4614201)
 
-What's new in SSMTool 2.5
-- Computation of forced response surface (FRS) via SSM-based model reduction,
-- Extraction of ridges and trenches of FRS without computing the surface,
-- Explicit adjoints and gradients for the optimization of periodic orbits via SSM-based ROMs. 
+What's new in SSMTool 2.6
+- Non-intrusive computations of SSMs, including wrappers for COMSOL Multiphysics [7],
 
 This package computes invariant manifolds in high-dimensional dynamical systems using the *Parametrization Method* with special attention to the computation of Spectral Submanifolds (SSM) and forced response curves in finite element models.
 
@@ -25,15 +23,20 @@ https://doi.org/10.1007/s11071-023-08300-5**
 
 The treatment of systems subject to parametric resonance via higher-order approximations of nonautonomous SSMs is described in the following article:
 
-[5] **Thurnher, T., Haller, G.  & Jain, S. Nonautonomous spectral submanifolds for model reduction of nonlinear mechanical systems under parametric resonances. Preprint (2023). Available on arXiv: 
-https://doi.org/10.48550/arXiv.2307.10240**
+[5] **Thurnher, T., Haller, G.  & Jain, S. Nonautonomous spectral submanifolds for model reduction of nonlinear mechanical systems under parametric resonances. Chaos 34, 073127 (2024). 
+https://doi.org/10.1063/5.0168431**
 
 The use of SSM-based ROMs to extract forced response surfaces (FRSs) and their ridges and trenches via parameter continuation is discussed in the following article:
 
-[6] **Li, M., Jain, S.  & Haller, G. Fast computation and characterization of forced response surface via spectral submanifolds and parameter continuation. Preprint (2023). Available on arXiv: 
-https://doi.org/10.48550/arXiv.2310.14850**
+[6] **Li, M., Jain, S.  & Haller, G. Fast computation and characterization of forced response surface via spectral submanifolds and parameter continuation. Nonlinear Dyn 112, 7771–7797 (2024).
+https://doi.org/10.1007/s11071-024-09482-2**
 
-In this version, we demonstrate the computational methodology over the following small academic examples as well high-dimensional finite element problems using the FE package *YetAnotherFECode*
+The non-intrusive computations of SSMs along with the coupling of SSMTool with COMSOL Multiphysics are discussed in the following article:
+
+[7] **Li, M., Thurnher, T., Xu, Z. & Jain, S. Data-free non-intrusive model reduction for nonlinear finite element models via spectral submanifolds. arxiv preprint, (2024).
+https://arxiv.org/abs/2409.10126**
+
+In this version, we demonstrate the computational methodology over the following small academic examples as well high-dimensional finite element problems using the in-house FE package *YetAnotherFECode* and commercial FE software *COMSOL Multiphysics*
 
 First-order examples:
 - BenchmarkSSM1stOrder: computation of 1D stable SSM of a two-dimensional system
@@ -52,6 +55,9 @@ Second-order examples:
 - PipeConveyingFluid: an **fluid-structure interaction** system with flow-induced gyroscopic and follower forces, demonstration of **asymmetric** damping and stiffness matrices and **global bifurcation**. More details can be found in https://doi.org/10.1016/j.ymssp.2022.109993
 - TimoshenkoBeam: a cantilever Timoshenko beam carrying a lumped mass. This example demonstrates the effectiveness of SSM reduction for systems undergoing large deformations. [2]
 - NACA airfoil based aircraft wing model: shell-based nonlinear finite element model containing more than 100,000 degrees of freedom. [1]
+- A viscoelastic cover plate modelled via COMSOL Multiphysics [7]
+- MEMS gyroscope: 3D continuum-based finite element model contructed in COMSOL Multiphysics with more than 1 million DOFs [7]
+
 
 Constrained mechanical systems [4]
  - 3D oscillator constrained in a surface
@@ -71,6 +77,11 @@ Forced response surface and its ridges and trenches [6]
  - Bernoulli beam with cubic nonlinear support: analytic prediction of FRS, which automatically uncovers isolas of forced response curves
  - von Karman plate with 1:1 internal resonance: extraction of FRS via two-dimensional continuation; extraction of ridges and trenches via successive parameter continuation
  - von Karman shell with 1:2 internal resonance: extraction of FRS and its ridges and trenches.
+
+Non-intrusive computations of SSMs and associated ROMs [7]
+ - Revisit von Karman shell with 1:2 internal resonance, NACA airfoil based aircraft wing model, and PipeConveyingFluid
+ - A viscoelastic cover plate modelled via COMSOL Multiphysics
+ - A MEMS with more than 1 million DOFs via COMSOL Multiphysics.
 
 This package uses the following external open-source packages:
 

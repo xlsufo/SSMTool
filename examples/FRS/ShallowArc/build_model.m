@@ -127,4 +127,3 @@ for j = 1:length(fnl)
     fnl{j} = MyAssembly.constrain_tensor(fnl{j});
 end
 
-

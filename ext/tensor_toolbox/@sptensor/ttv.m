@@ -56,7 +56,9 @@ remdims = setdiff(1:ndims(a),dims);
 
 % Check that each multiplicand is the right size.
 for i = 1:numel(dims)
+    
     if ~isequal(size(v{vidx(i)}),[size(a,dims(i)) 1])
+        size(v{vidx(i)}),[size(a,dims(i)) 1]
         error('Multiplicand is wrong size');
     end
 end
